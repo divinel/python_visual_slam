@@ -12,6 +12,7 @@ def main():
     image_displayer = displayer.Displayer("data")
     # feature_extractor_shi = image_processing.FeatureExtractor(max_kps = 1000, quality_level = 0.01, min_dist = 5)
     feature_extractor = image_processing.ORBFeatureExtractor(max_kps = 1000)
+    relative_estimator = relative_estimation.RelativeEstimator()
     
     prev_frame = None
     cur_frame = None
@@ -26,7 +27,7 @@ def main():
         # Dsiplay tracked movement between frame
         cur_frame = frame.Frame(img, kps, desc)
         if prev_frame:
-            matches, matched_uvs = relative_estimation.estimate_relative_pose(prev_frame, cur_frame)
+            matches, matched_uvs = relative_estimator.match_frames(prev_frame, cur_frame)
             displayer.draw_relative_movements(disp_img, matched_uvs)
         prev_frame = cur_frame       
         
