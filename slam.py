@@ -21,25 +21,17 @@ def main():
         gray_img = image_processing.color2gray(img)
 
         kps, desc = feature_extractor.extract(gray_img)
-
-        # Display detected key points
-        for kp in kps:
-            u, v = int(round(kp.pt[0])), int(round(kp.pt[1]))
-            cv.circle(disp_img, (u,v), radius=2, color=(0, 255, 0), thickness=1)
+        displayer.draw_keypoints(disp_img, kps)
 
         # Dsiplay tracked movement between frame
         cur_frame = frame.Frame(img, kps, desc)
         if prev_frame:
             matches, matched_uvs = relative_estimation.estimate_relative_pose(prev_frame, cur_frame)
-            for match in matched_uvs:
-                prev_kp = match[0]
-                cur_kp = match[1]
-                cv.line(disp_img, prev_kp, cur_kp, (255, 0, 0), thickness = 1)
+            displayer.draw_relative_movements(disp_img, matched_uvs)
+        prev_frame = cur_frame       
         
-        if disp_img is not None:
-            image_displayer.display(disp_img, 10)
+        image_displayer.display(disp_img, 10)
 
-        prev_frame = cur_frame
 
 if __name__ == "__main__":
     main()
