@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import frame
 import cv2 as cv
+import numpy as np
 
 class RelativeEstimator:
     def __init__(self):
@@ -32,3 +33,12 @@ class RelativeEstimator:
             matched_uvs.append((uv1, uv2))
 
         return good_matches, matched_uvs
+
+def estimate_fundamental(matches, frame1, frame2):
+    # from matches build np.ndarray for matched points
+    matched_kps1 = np.int32([frame1.kps[match.queryIdx].pt for match in matches])
+    matched_kps2 = np.int32([frame2.kps[match.trainIdx].pt for match in matches])
+    # 8 points RANSAC is built in opencv's findFundamentalMat function
+    # return F and inliers mask
+    return cv.findFundamentalMat(matched_kps1, matched_kps2, method = cv.FM_RANSAC, 
+                                 ransacReprojThreshold = 1., confidence = 0.9)

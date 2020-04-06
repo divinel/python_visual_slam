@@ -24,10 +24,14 @@ def main():
         kps, desc = feature_extractor.extract(gray_img)
         displayer.draw_keypoints(disp_img, kps)
 
-        # Dsiplay tracked movement between frame
+        # Display tracked movement between frame
+        F = None
+        inliers = []
         cur_frame = frame.Frame(img, kps, desc)
         if prev_frame:
             matches, matched_uvs = relative_estimator.match_frames(prev_frame, cur_frame)
+            F, inliers = relative_estimation.estimate_fundamental(matches, prev_frame, cur_frame)
+            print("num of matches = {}, num inliers for 8 Pts RANSAC = {}".format(len(matches), sum(inliers)))
             displayer.draw_relative_movements(disp_img, matched_uvs)
         prev_frame = cur_frame       
         
