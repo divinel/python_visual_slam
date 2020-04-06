@@ -24,9 +24,7 @@ def estimate_relative_pose(frame1, frame2):
 
     good_matches.sort(key = lambda m : m.distance)
 
-    match_img = cv.drawMatches(frame1.img, frame1.kps, frame2.img, frame2.kps, good_matches, 
-                               None, flags = cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
-    return match_img
+    return good_matches
 
 
 def main():
@@ -48,24 +46,27 @@ def main():
 
         kps, desc = feature_extractor.extract(gray_img)
 
-        match_img = None
+        matches = None
         cur_frame = Frame(img, kps, desc)
         if prev_frame:
-            match_img = estimate_relative_pose(prev_frame, cur_frame)
-        prev_frame = cur_frame
+            matches = estimate_relative_pose(prev_frame, cur_frame)
 
         for kp in kps:
             u, v = int(round(kp.pt[0])), int(round(kp.pt[1]))
             cv.circle(disp_img, (u,v), radius=2, color=(0, 255, 0), thickness=1)
 
-        if (match_img is not None) and (disp_img is not None):
-            orig_size = match_img.shape
-            new_size = (orig_size[1] // 2, orig_size[0] // 2)
-            match_img = cv.resize(match_img, new_size, interpolation = cv.INTER_AREA)
-            disp_img = np.vstack((disp_img, match_img))
+        if matches is not None:
+            for match in matches:
+                prev_kp = prev_frame.kps[match.queryIdx].pt
+                cur_kp = cur_frame.kps[match.trainIdx].pt
+                cv.line(disp_img, 
+                        tuple(int(round(coord)) for coord in prev_kp), 
+                        tuple(int(round(coord)) for coord in cur_kp), 
+                        (255, 0, 0), thickness = 1)
+        if disp_img is not None:
             image_displayer.display(disp_img, 10)
-        elif disp_img is not None:
-            image_displayer.display(disp_img, 10)
+
+        prev_frame = cur_frame
 
 if __name__ == "__main__":
     main()
