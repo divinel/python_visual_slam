@@ -1,31 +1,7 @@
-import data_loader, displayer, image_processing
-import sys, copy
-from collections import namedtuple
+import data_loader, displayer
+import image_processing, frame, relative_estimation
+import sys
 import cv2 as cv
-import numpy as np
-
-Frame = namedtuple('Frame', 'img kps desc')
-def estimate_relative_pose(frame1, frame2):
-    FLANN_INDEX_LSH = 6
-    index_params = dict(algorithm = 6,
-                       table_number = 6,
-                       key_size = 12,
-                       multi_probe_level = 1)
-    search_params = dict(checks = 50)
-    matcher = cv.FlannBasedMatcher(index_params, search_params)
-    matches = matcher.knnMatch(frame1.desc, frame2.desc, k = 2)
-    good_matches = []
-    for match in matches:
-        if len(match) < 2:
-            continue
-        first, second = match
-        if first.distance < (0.75 * second.distance):
-            good_matches.append(first)
-
-    good_matches.sort(key = lambda m : m.distance)
-
-    return good_matches
-
 
 def main():
     data_folder = sys.argv[1]
@@ -46,23 +22,20 @@ def main():
 
         kps, desc = feature_extractor.extract(gray_img)
 
-        matches = None
-        cur_frame = Frame(img, kps, desc)
-        if prev_frame:
-            matches = estimate_relative_pose(prev_frame, cur_frame)
-
+        # Display detected key points
         for kp in kps:
             u, v = int(round(kp.pt[0])), int(round(kp.pt[1]))
             cv.circle(disp_img, (u,v), radius=2, color=(0, 255, 0), thickness=1)
 
-        if matches is not None:
-            for match in matches:
-                prev_kp = prev_frame.kps[match.queryIdx].pt
-                cur_kp = cur_frame.kps[match.trainIdx].pt
-                cv.line(disp_img, 
-                        tuple(int(round(coord)) for coord in prev_kp), 
-                        tuple(int(round(coord)) for coord in cur_kp), 
-                        (255, 0, 0), thickness = 1)
+        # Dsiplay tracked movement between frame
+        cur_frame = frame.Frame(img, kps, desc)
+        if prev_frame:
+            matches, matched_uvs = relative_estimation.estimate_relative_pose(prev_frame, cur_frame)
+            for match in matched_uvs:
+                prev_kp = match[0]
+                cur_kp = match[1]
+                cv.line(disp_img, prev_kp, cur_kp, (255, 0, 0), thickness = 1)
+        
         if disp_img is not None:
             image_displayer.display(disp_img, 10)
 
