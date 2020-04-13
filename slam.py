@@ -1,11 +1,15 @@
-import data_loader, displayer
+import data_loader, calib_loader, displayer
 import image_processing, frame, relative_estimation
 import sys
 import cv2 as cv
 
 def main():
     data_folder = sys.argv[1]
+    calib_file = sys.argv[2]
     print("data folder is {path}".format(path = data_folder))
+    print("calibration parameters file is {}".format(calib_file))
+    K, Cam_Rts = calib_loader.load_calib_params(calib_file)
+    print("camera intrinsic matrix:\n{}".format(K))
     img_files = data_loader.get_images_filenames(data_folder)
     print("{image_size} images are loaded".format(image_size = len(img_files)))
     image_loader = data_loader.ImageLoader(img_files)
@@ -32,6 +36,7 @@ def main():
             matches, matched_uvs = relative_estimator.match_frames(prev_frame, cur_frame)
             F, inliers = relative_estimation.estimate_fundamental(matches, prev_frame, cur_frame)
             print("num of matches = {}, num inliers for 8 Pts RANSAC = {}".format(len(matches), sum(inliers.ravel())))
+            print(F)
             uv_inliers = [matched_uv for i, matched_uv in enumerate(matched_uvs) if inliers[i, 0] > 0]
             displayer.draw_relative_movements(disp_img, uv_inliers)
         prev_frame = cur_frame       
