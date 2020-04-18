@@ -20,4 +20,4 @@ def load_calib_params(file):
         K = Pmats[0][:,0:3]
         invK = np.linalg.inv(K)
         R_ts = [get_R_t_from_P(P, invK) for P in Pmats]
-        return K, R_ts
+        return K, invK, R_ts

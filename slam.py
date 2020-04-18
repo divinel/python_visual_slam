@@ -8,7 +8,7 @@ def main():
     calib_file = sys.argv[2]
     print("data folder is {path}".format(path = data_folder))
     print("calibration parameters file is {}".format(calib_file))
-    K, Cam_Rts = calib_loader.load_calib_params(calib_file)
+    K, K_inv, Cam_Rts = calib_loader.load_calib_params(calib_file)
     print("camera intrinsic matrix:\n{}".format(K))
     img_files = data_loader.get_images_filenames(data_folder)
     print("{image_size} images are loaded".format(image_size = len(img_files)))
@@ -35,13 +35,18 @@ def main():
         if prev_frame:
             matches, matched_uvs = relative_estimator.match_frames(prev_frame, cur_frame)
             F, inliers = relative_estimation.estimate_fundamental(matches, prev_frame, cur_frame)
-            print("num of matches = {}, num inliers for 8 Pts RANSAC = {}".format(len(matches), sum(inliers.ravel())))
-            print(F)
-            uv_inliers = [matched_uv for i, matched_uv in enumerate(matched_uvs) if inliers[i, 0] > 0]
-            displayer.draw_relative_movements(disp_img, uv_inliers)
+            E = relative_estimation.get_essential(F, K)
+            if len(matches) > 0:
+                relative_poses = relative_estimation.get_R_t(E, K, prev_frame.kps, cur_frame.kps, matches, inliers)
+                print("num of matches = {}, num inliers for 8 Pts RANSAC = {}".format(len(matches), sum(inliers.ravel())))
+                print(E)
+                print(f"R:\n {relative_poses[0]}")
+                print(f"t:\n {relative_poses[1]}")
+                uv_inliers = [matched_uv for i, matched_uv in enumerate(matched_uvs) if inliers[i, 0] > 0]
+                displayer.draw_relative_movements(disp_img, uv_inliers)
         prev_frame = cur_frame       
         
-        image_displayer.display(disp_img, 10)
+        image_displayer.display(disp_img, 0)
 
 
 if __name__ == "__main__":
