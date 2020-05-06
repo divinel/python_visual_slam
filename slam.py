@@ -2,6 +2,7 @@ import data_loader, calib_loader, displayer
 import image_processing, frame, relative_estimation
 import sys
 import cv2 as cv
+import numpy as np
 
 def main():
     data_folder = sys.argv[1]
@@ -20,6 +21,7 @@ def main():
     
     prev_frame = None
     cur_frame = None
+    poses = [np.hstack((np.identity(3), np.zeros((3,1))))]
     while not image_loader.empty():
         img = image_loader.get_next_image()
         disp_img = img.copy()
@@ -37,16 +39,15 @@ def main():
             F, inliers = relative_estimation.estimate_fundamental(matches, prev_frame, cur_frame)
             E = relative_estimation.get_essential(F, K)
             if len(matches) > 0:
-                relative_poses = relative_estimation.get_R_t(E, K, prev_frame.kps, cur_frame.kps, matches, inliers)
+                new_pose = relative_estimation.get_pose(E, K, prev_frame.kps, cur_frame.kps, matches, inliers, poses[-1])
+                poses.append(new_pose)
+                print(new_pose)
                 print("num of matches = {}, num inliers for 8 Pts RANSAC = {}".format(len(matches), sum(inliers.ravel())))
                 print(E)
-                print(f"R:\n {relative_poses[0]}")
-                print(f"t:\n {relative_poses[1]}")
                 uv_inliers = [matched_uv for i, matched_uv in enumerate(matched_uvs) if inliers[i, 0] > 0]
                 displayer.draw_relative_movements(disp_img, uv_inliers)
         prev_frame = cur_frame       
-        
-        image_displayer.display(disp_img, 0)
+        image_displayer.display(disp_img, 50)
 
 
 if __name__ == "__main__":

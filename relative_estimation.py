@@ -54,6 +54,11 @@ def decompose_essential(E):
     return ((R1, t1), (R1, t2), (R2, t1), (R2, t2))
 
 def get_R_t(E, K, pts_1, pts_2, matches, inliers):
+    '''
+        R is cur_R_prev
+        t is prev_t_cur
+        x_prev = R * (x_prev - t)
+    '''
     R_ts = decompose_essential(E)
     pts_inliers_1 = np.array([pts_1[match.queryIdx].pt for i, match in enumerate(matches) if inliers[i, 0] > 0])
     pts_inliers_2 = np.array([pts_2[match.trainIdx].pt for i, match in enumerate(matches) if inliers[i, 0] > 0])
@@ -76,6 +81,15 @@ def get_R_t(E, K, pts_1, pts_2, matches, inliers):
             max_cnt = count
 
     return result
+
+def get_pose(E, K, pts_1, pts_2, matches, inliers, prev_pose):
+    R, t = get_R_t(E, K, pts_1, pts_2, matches, inliers)
+    t = -R.T.dot(t)
+    prev_R = prev_pose[:, 0:3]
+    prev_t = prev_pose[:, 3]
+    cur_R = R.dot(prev_R)
+    cur_t = R.dot(prev_t) + t
+    return np.hstack((cur_R, cur_t.reshape(3,1)))
 
 
 def get_essential(F, K):
