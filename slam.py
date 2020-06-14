@@ -33,17 +33,17 @@ def main():
         # Display tracked movement between frame
         F = None
         inliers = []
-        cur_frame = frame.Frame(img, kps, desc)
+        cur_frame = frame.Frame((np.identity(3), np.zeros((3,1))), kps, desc)
         if prev_frame:
             matches, matched_uvs = relative_estimator.match_frames(prev_frame, cur_frame)
             F, inliers = relative_estimation.estimate_fundamental(matches, prev_frame, cur_frame)
             E = relative_estimation.get_essential(F, K)
             if len(matches) > 0:
-                new_pose = relative_estimation.get_pose(E, K, prev_frame.kps, cur_frame.kps, matches, inliers, poses[-1])
-                poses.append(new_pose)
-                print(new_pose)
+                relative_R_t = relative_estimation.get_R_t(E, K, prev_frame.kps, cur_frame.kps, matches, inliers)
+                cur_frame.pose = relative_estimation.get_pose(relative_R_t, prev_frame.pose)
+                poses.append(cur_frame)
+                print(f"cur_frame R:\n {cur_frame.pose[0]}\n T:\n {cur_frame.pose[1]}")
                 print("num of matches = {}, num inliers for 8 Pts RANSAC = {}".format(len(matches), sum(inliers.ravel())))
-                print(E)
                 uv_inliers = [matched_uv for i, matched_uv in enumerate(matched_uvs) if inliers[i, 0] > 0]
                 displayer.draw_relative_movements(disp_img, uv_inliers)
         prev_frame = cur_frame       

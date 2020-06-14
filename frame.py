@@ -1,4 +1,6 @@
 #!/usr/bin/env python
-from collections import namedtuple
-
-Frame = namedtuple('Frame', 'img kps desc')
+class Frame:
+    def __init__(self, pose, keypoints, descriptors):
+        self.pose = pose
+        self.kps = keypoints
+        self.desc = descriptors
