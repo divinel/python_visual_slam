@@ -17,9 +17,14 @@ class ImageLoader:
     def empty(self):
         return self.cur_idx >= len(self.image_names)
     def get_next_image(self):
+        '''
+            return frame index and corresponding image
+            frame index starts from 0
+        '''
         if self.empty():
             return None
         else:
             img = cv.imread(self.image_names[self.cur_idx])
+            img_idx = self.cur_idx
             self.cur_idx += 1
-            return img
+            return img_idx, img
