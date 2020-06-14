@@ -53,10 +53,11 @@ def decompose_essential(E):
 def get_R_t(E, K, pts_1, pts_2, matches, inliers):
     '''
         Output parameter:
-        R is prev_R_cur
-        t is prev_t_cur
-        x_prev = R * x_cur + t
+        R is cur_R_prev
+        t is cur_t_prev
+        x_cur = R * x_prev + t
     '''
+
     R_ts = decompose_essential(E)
     pts_inliers_1 = np.array([pts_1[match.queryIdx].pt for i, match in enumerate(matches) if inliers[i] > 0])
     pts_inliers_2 = np.array([pts_2[match.trainIdx].pt for i, match in enumerate(matches) if inliers[i] > 0])
@@ -75,16 +76,23 @@ def get_R_t(E, K, pts_1, pts_2, matches, inliers):
             if x_1[2, i] > 0 and x_2[2, i] > 0:
                 count += 1
         if count > max_cnt:
-            result = (R.T, t)
+            result = (R, t)
             max_cnt = count
 
     return result
 
 def get_pose(relative_Rt, prev_Rt):
+    '''
+        pose is representated as (world_R_cam, world_T_cam)
+        relative_Rt is prev to cur
+    '''
     relative_R, relative_T = relative_Rt
+    prev_R_cur = relative_R.T
+    prev_T_cur = prev_R_cur.dot(-relative_T)
+
     prev_R, prev_T = prev_Rt    
-    new_R = prev_R.dot(relative_R)
-    new_T = prev_R.dot(relative_T) + prev_T
+    new_R = prev_R.dot(prev_R_cur)
+    new_T = prev_R.dot(prev_T_cur) + prev_T
     return (new_R, new_T)
 
 

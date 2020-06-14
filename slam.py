@@ -1,5 +1,5 @@
 import data_loader, calib_loader, displayer
-import image_processing, frame, relative_estimation
+import image_processing, frame, relative_estimation, reconstruction
 import sys
 import cv2 as cv
 import numpy as np
@@ -22,6 +22,7 @@ def main():
     prev_frame = None
     cur_frame = None
     frames = []
+    landmark_map = {}
     while not image_loader.empty():
         frame_idx, img = image_loader.get_next_image()
         disp_img = img.copy()
@@ -44,6 +45,8 @@ def main():
                 relative_R_t = relative_estimation.get_R_t(E, K, prev_frame.kps, cur_frame.kps, matches, inliers)
                 cur_frame.pose = relative_estimation.get_pose(relative_R_t, prev_frame.pose)
                 print(f"cur_frame R:\n {cur_frame.pose[0]}\n T:\n {cur_frame.pose[1]}")
+                new_landmarks = reconstruction.reconstruct(K, prev_frame, cur_frame, matches, inliers, landmark_map)
+                print(f"{len(new_landmarks)} new landmarks are reconstructed")
                 uv_inliers = [matched_uv for i, matched_uv in enumerate(matched_uvs) if inliers[i] > 0]
                 displayer.draw_relative_movements(disp_img, uv_inliers)
         frames.append(cur_frame)
