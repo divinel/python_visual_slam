@@ -4,6 +4,7 @@ import OpenGL.GL as gl
 import pangolin
 
 import numpy as np
+from scipy.spatial.transform import Rotation
 
 import threading
 import time
@@ -17,6 +18,7 @@ class Renderer(threading.Thread):
         self.map_pts = None
         self.poses = []
         self.data_lock = threading.Lock()
+        self.tree = None
 
     def add_map_pts(self, new_map_pts):
         self.data_lock.acquire()
@@ -34,10 +36,13 @@ class Renderer(threading.Thread):
         pangolin.CreateWindowAndBind(self.win_name, 640, 480)
         gl.glEnable(gl.GL_DEPTH_TEST)
         self.scam = pangolin.OpenGlRenderState(
-            pangolin.ProjectionMatrix(640, 480, 420, 420, 320, 240, 0.2, 100),
-            pangolin.ModelViewLookAt(-2, 2, -2, 0, 0, 0, pangolin.AxisY))
+            pangolin.ProjectionMatrix(640, 480, 420, 420, 320, 240, 0.2, 1000),
+            pangolin.ModelViewLookAt(2, 10, 10, 0, 0, 0, pangolin.AxisY))
 
-        self.handler = pangolin.Handler3D(self.scam)
+        self.tree = pangolin.Renderable()
+        self.tree.Add(pangolin.Axis())
+        # self.handler = pangolin.Handler3D(self.scam)
+        self.handler = pangolin.SceneHandler(self.tree, self.scam)
         
         self.dcam = pangolin.CreateDisplay()
         self.dcam.SetBounds(0.0, 1.0, 0.0, 1.0, -640.0/480.0)
@@ -46,7 +51,7 @@ class Renderer(threading.Thread):
             gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
             gl.glClearColor(1.0, 1.0, 1.0, 1.0)
             self.dcam.Activate(self.scam)
-            
+            self.tree.Render()
             self.data_lock.acquire()
 
             if self.poses:
@@ -66,8 +71,15 @@ class Renderer(threading.Thread):
 
             pangolin.FinishFrame()
 
+# convert pose(camera to global) to gl frame
+def pose_to_gl_frame(pose, gl_R_global):
+    return (gl_R_global.dot(pose[0]), gl_R_global.dot(pose[1]))
 
-
+# convert pts in global frame to gl frame
+def map_pts_to_gl_frame(pts, gl_R_global):
+    pts_gl = gl_R_global.dot(pts.T)
+    return pts_gl.T
+    
 class Displayer3D:
     def __init__(self, win_name):
         self.win_name = win_name
@@ -75,14 +87,18 @@ class Displayer3D:
         self.handler = None
         self.dcam = None
         self.renderer = None
+        self.gl_R_global = Rotation.from_euler('x', -180, degrees = True).as_matrix()
 
     def add_pose(self, pose):
         if self.renderer:
-            self.renderer.add_pose(pose)
+            pose_gl = pose_to_gl_frame(pose, self.gl_R_global)
+            self.renderer.add_pose(pose_gl)
     def add_map_pts(self, map_pts):
         if self.renderer:
+            map_pts_gl = map_pts_to_gl_frame(map_pts, self.gl_R_global)
             self.renderer.add_map_pts(map_pts)
     def display(self):
         self.renderer = Renderer(self.win_name)
         self.renderer.start()
+
 

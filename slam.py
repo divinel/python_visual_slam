@@ -52,9 +52,9 @@ def main():
                 uv_inliers = [matched_uv for i, matched_uv in enumerate(matched_uvs) if inliers[i] > 0]
                 displayer.draw_relative_movements(disp_img, uv_inliers)
                 displayer_slam.add_pose(cur_frame.pose)
-                displayer_slam.add_map_pts(np.array(new_landmarks))
+                # displayer_slam.add_map_pts(np.array(new_landmarks))
         frames.append(cur_frame)
-        image_displayer.display(disp_img, 0)
+        image_displayer.display(disp_img, 40)
 
 
 
