@@ -1,4 +1,4 @@
-import data_loader, calib_loader, displayer
+import data_loader, calib_loader, displayer, displayer3d
 import image_processing, frame, relative_estimation, reconstruction
 import sys
 import cv2 as cv
@@ -14,7 +14,9 @@ def main():
     img_files = data_loader.get_images_filenames(data_folder)
     print("{image_size} images are loaded".format(image_size = len(img_files)))
     image_loader = data_loader.ImageLoader(img_files)
-    image_displayer = displayer.Displayer("data")
+    image_displayer = displayer.Displayer("cam")
+    displayer_slam = displayer3d.Displayer3D("slam")
+    displayer_slam.display()
     # feature_extractor_shi = image_processing.FeatureExtractor(max_kps = 1000, quality_level = 0.01, min_dist = 5)
     feature_extractor = image_processing.ORBFeatureExtractor(max_kps = 1000)
     relative_estimator = relative_estimation.RelativeEstimator()
@@ -49,8 +51,11 @@ def main():
                 print(f"{len(new_landmarks)} new landmarks are reconstructed")
                 uv_inliers = [matched_uv for i, matched_uv in enumerate(matched_uvs) if inliers[i] > 0]
                 displayer.draw_relative_movements(disp_img, uv_inliers)
+                displayer_slam.add_pose(cur_frame.pose)
+                displayer_slam.add_map_pts(np.array(new_landmarks))
         frames.append(cur_frame)
-        image_displayer.display(disp_img, 50)
+        image_displayer.display(disp_img, 0)
+
 
 
 if __name__ == "__main__":
