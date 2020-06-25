@@ -29,9 +29,9 @@ def reconstruct(K, frame1, frame2, matches, inliers, landmark_map):
                 frame2.landmark_idx[match.trainIdx] = landmark_idx
     matched_pts1 = np.array(new_matched_pts1)
     matched_pts2 = np.array(new_matched_pts2)
-    P1 = K.dot(pose.get_3x4_pose_mat(pose.get_inverse_pose(frame1.pose)))
-    P2 = K.dot(pose.get_3x4_pose_mat(pose.get_inverse_pose(frame2.pose)))
-    point3d_homo = cv.triangulatePoints(P1, P2, matched_pts1.T, matched_pts2.T)
+    P1_w2l = K.dot(pose.get_3x4_pose_mat(pose.get_inverse_pose(frame1.pose)))
+    P2_w2l = K.dot(pose.get_3x4_pose_mat(pose.get_inverse_pose(frame2.pose)))
+    point3d_homo = cv.triangulatePoints(P1_w2l, P2_w2l, matched_pts1.T, matched_pts2.T)
     point3d_homo /= point3d_homo[3, :]
     pts_3d = point3d_homo[:3, :].T.tolist()
 
