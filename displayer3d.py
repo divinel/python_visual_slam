@@ -93,9 +93,7 @@ class Displayer3D:
             self.renderer.add_pose(pose)
     def add_map_pts(self, map_pts):
         if self.renderer:
-            R = Rotation.from_euler('z', -180, degrees = True).as_matrix()
-            self.renderer.add_map_pts(R.dot(map_pts.T).T)
-            # self.renderer.add_map_pts(map_pts)
+            self.renderer.add_map_pts(map_pts)
     def display(self):
         self.renderer = Renderer(self.win_name)
         self.renderer.start()

@@ -32,8 +32,13 @@ def reconstruct(K, frame1, frame2, matches, inliers, landmark_map):
     P1_w2l = K.dot(pose.get_3x4_pose_mat(pose.get_inverse_pose(frame1.pose)))
     P2_w2l = K.dot(pose.get_3x4_pose_mat(pose.get_inverse_pose(frame2.pose)))
     point3d_homo = cv.triangulatePoints(P1_w2l, P2_w2l, matched_pts1.T, matched_pts2.T)
-    point3d_homo /= point3d_homo[3, :]
+    point3d_homo /= point3d_homo[3:, :]
+    land_mark_in_frame2 = pose.get_3x4_pose_mat(pose.get_inverse_pose(frame2.pose)).dot(point3d_homo)
+    # for pt3d in land_mark_in_frame2.T.tolist():
+    #     print(pt3d)
     pts_3d = point3d_homo[:3, :].T.tolist()
+    for pt3d_w in pts_3d:
+        print(pt3d_w)
 
     new_landmark_idx = 0
     if len(landmark_map):
