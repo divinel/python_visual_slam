@@ -16,6 +16,7 @@ class Renderer(threading.Thread):
         self.cam_color = cam_color
         self.map_pts_color = map_pts_color
         self.map_pts = None
+        self.new_pts_obs = None 
         self.poses = []
         self.data_lock = threading.Lock()
         self.tree = None
@@ -26,6 +27,7 @@ class Renderer(threading.Thread):
             self.map_pts = new_map_pts
         else:
             self.map_pts = np.append(self.map_pts, new_map_pts, 0)
+        self.new_pts_obs = new_map_pts
         self.data_lock.release()
 
     def add_pose(self, new_pose):
@@ -37,11 +39,10 @@ class Renderer(threading.Thread):
         gl.glEnable(gl.GL_DEPTH_TEST)
         self.scam = pangolin.OpenGlRenderState(
             pangolin.ProjectionMatrix(640, 480, 420, 420, 320, 240, 0.2, 1000),
-            pangolin.ModelViewLookAt(2, 10, 10, 0, 0, 0, pangolin.AxisY))
+            pangolin.ModelViewLookAt(2, -10, -30, 0, 0, 0, pangolin.AxisNegY))
 
         self.tree = pangolin.Renderable()
         self.tree.Add(pangolin.Axis())
-        # self.handler = pangolin.Handler3D(self.scam)
         self.handler = pangolin.SceneHandler(self.tree, self.scam)
         
         self.dcam = pangolin.CreateDisplay()
@@ -65,20 +66,18 @@ class Renderer(threading.Thread):
                 gl.glColor3f(*self.map_pts_color)
                 pangolin.DrawPoints(self.map_pts)
 
+            if self.new_pts_obs is not None:
+                cur_pos = self.poses[-1]
+                cam_centers = np.repeat(cur_pos[1].T, self.new_pts_obs.shape[0], axis = 0)
+                gl.glLineWidth(1)
+                gl.glColor3f(0.0, 0.0, 1.0)
+                pangolin.DrawLines(cam_centers, self.new_pts_obs)
+
             self.data_lock.release()
 
             time.sleep(0.02)
 
             pangolin.FinishFrame()
-
-# convert pose(camera to global) to gl frame
-def pose_to_gl_frame(pose, gl_R_global):
-    return (gl_R_global.dot(pose[0]), gl_R_global.dot(pose[1]))
-
-# convert pts in global frame to gl frame
-def map_pts_to_gl_frame(pts, gl_R_global):
-    pts_gl = gl_R_global.dot(pts.T)
-    return pts_gl.T
     
 class Displayer3D:
     def __init__(self, win_name):
@@ -91,12 +90,12 @@ class Displayer3D:
 
     def add_pose(self, pose):
         if self.renderer:
-            pose_gl = pose_to_gl_frame(pose, self.gl_R_global)
-            self.renderer.add_pose(pose_gl)
+            self.renderer.add_pose(pose)
     def add_map_pts(self, map_pts):
         if self.renderer:
-            map_pts_gl = map_pts_to_gl_frame(map_pts, self.gl_R_global)
-            self.renderer.add_map_pts(map_pts)
+            R = Rotation.from_euler('z', -180, degrees = True).as_matrix()
+            self.renderer.add_map_pts(R.dot(map_pts.T).T)
+            # self.renderer.add_map_pts(map_pts)
     def display(self):
         self.renderer = Renderer(self.win_name)
         self.renderer.start()

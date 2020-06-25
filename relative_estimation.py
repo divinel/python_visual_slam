@@ -2,6 +2,7 @@
 import frame
 import cv2 as cv
 import numpy as np
+import pose
 
 class RelativeEstimator:
     def __init__(self):
@@ -76,7 +77,7 @@ def get_R_t(E, K, pts_1, pts_2, matches, inliers):
             if x_1[2, i] > 0 and x_2[2, i] > 0:
                 count += 1
         if count > max_cnt:
-            result = (R, t)
+            result = (pose.orthonomalize_rot_mat(R), t)
             max_cnt = count
 
     return result
@@ -93,7 +94,7 @@ def get_pose(relative_Rt, prev_Rt):
     prev_R, prev_T = prev_Rt    
     new_R = prev_R.dot(prev_R_cur)
     new_T = prev_R.dot(prev_T_cur) + prev_T
-    return (new_R, new_T)
+    return (pose.orthonomalize_rot_mat(new_R), new_T)
 
 
 def get_essential(F, K):

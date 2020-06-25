@@ -49,12 +49,12 @@ def main():
                 print(f"cur_frame R:\n {cur_frame.pose[0]}\n T:\n {cur_frame.pose[1]}")
                 new_landmarks = reconstruction.reconstruct(K, prev_frame, cur_frame, matches, inliers, landmark_map)
                 print(f"{len(new_landmarks)} new landmarks are reconstructed")
-                uv_inliers = [matched_uv for i, matched_uv in enumerate(matched_uvs) if inliers[i] > 0]
+                uv_inliers = [matched_uv for i, matched_uv in enumerate(matched_uvs) if inliers[i]]
                 displayer.draw_relative_movements(disp_img, uv_inliers)
                 displayer_slam.add_pose(cur_frame.pose)
-                # displayer_slam.add_map_pts(np.array(new_landmarks))
+                displayer_slam.add_map_pts(np.array(new_landmarks))
         frames.append(cur_frame)
-        image_displayer.display(disp_img, 40)
+        image_displayer.display(disp_img, 50)
 
 
 
